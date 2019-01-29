@@ -108,14 +108,20 @@ def read_old_totalfile():
         c.place(x=210,y=60,width=200,height=30)
         #建立一個data的 list table
         def seedata():
-            value = lb.get(lb.curselection())
+            #用來避免在你沒選新的選項時 因為點到別的地方 導致value值消失
+            global value_save
+            if lb.curselection():
+                #value=你滑鼠選的選項的值
+                value = lb.get(lb.curselection())
+                value_save=value
+            else:
+                value=value_save
             workbook_sheet=workbook[value]
             #建立一個陣列放等等的輸出
             mylist = []
             count=0#用來計算第幾個人(因為下面的row的格式不是數字qq)
-            for row in workbook_sheet.iter_rows('A{}:B{}'.format(workbook_sheet.min_row,workbook_sheet.max_row)):
-                count+=1
-                data=str(count)+' '
+            for row in workbook_sheet.iter_rows('A{}:C{}'.format(workbook_sheet.min_row,workbook_sheet.max_row)):
+                data=''
                 for cell in row:
                     data=data+str(cell.value)+'  '
                 mylist.append(data)
@@ -124,9 +130,9 @@ def read_old_totalfile():
             ld=tk.Listbox(window,listvariable=mylist_allsheet)
             ld.place(x=500,y=60,width=200,height=300)
             maxrow=workbook_sheet.max_row
-            num_last=maxrow
-            name_last=workbook_sheet['A'+str(maxrow)].value
-            time_last=workbook_sheet['B'+str(maxrow)].value
+            num_last=workbook_sheet['A'+str(maxrow)].value
+            name_last=workbook_sheet['B'+str(maxrow)].value
+            time_last=workbook_sheet['C'+str(maxrow)].value
             w=tk.Label(window,bg='blue',fg='white',font=('DFKai-SB', 14),text='最後一筆資料:第'+str(num_last)+'位 名子:'+str(name_last)+'   登入時間'+str(time_last))
             w.place(x=0,y=30,width=1000,height=30)
             
@@ -134,7 +140,14 @@ def read_old_totalfile():
         c.place(x=210,y=90,width=200,height=30)
         
         def add_data():
-            value = lb.get(lb.curselection())
+            #用來避免在你沒選新的選項時 因為點到別的地方 導致value值消失
+            global value_save
+            if lb.curselection():
+                #value=你滑鼠選的選項的值
+                value = lb.get(lb.curselection())
+                value_save=value
+            else:
+                value=value_save
             workbook_sheet=workbook[value]
             maxrow=workbook_sheet.max_row
             window_add_data=tk.Tk()
@@ -142,7 +155,11 @@ def read_old_totalfile():
             window_add_data.geometry('400x120')
             #時間
             time_now=time.strftime("%Y-%m-%d %H:%M:%S")
-            n=tk.Label(window_add_data,fg='black',text='第'+str(maxrow+1)+'位輸入者',font=('DFKai-SB', 14))
+            if maxrow==1 and workbook_sheet['A1'].value==None:
+                num=1
+            else:
+                num=int(workbook_sheet['A'+str(maxrow)].value)+1
+            n=tk.Label(window_add_data,fg='black',text='第'+str(num)+'位輸入者',font=('DFKai-SB', 14))
             n.place(x=0,y=0,width=400,height=30)
             n=tk.Label(window_add_data,fg='black',text='名子:',font=('DFKai-SB', 14))
             n.place(x=0,y=30,width=70,height=30)
@@ -158,14 +175,30 @@ def read_old_totalfile():
                     wb=op.load_workbook(value+'.xlsx')
                     ws=wb[value]
                     maxRow=ws.max_row
-                    ws['A'+str(maxRow+1)]=str(envalue)
-                    print(maxRow)
-                    ws['B'+str(maxRow+1)]=str(time_now)
+                    #判斷是否是空的worksheet 因為空的裡面的maxrow是1 然後B1,C1會回傳None
+                    if maxRow==1 and ws['A1'].value==None:
+                        ws['A1']='Rank'
+                        ws['B1']='Name'
+                        ws['C1']='Time'
+                    #下面用來判斷是否適第一筆資料 是的話給它的rank為1 之後的資料會用maxrow的rank裡面的數字+1
+                    if maxRow==1 and ws['A1'].value=='Rank':
+                        ws['A'+str(maxRow+1)]='1'
+                    else:
+                        ws['A'+str(maxRow+1)]=str(int(ws['A'+str(maxRow)].value)+1)
+                    ws['B'+str(maxRow+1)]=str(envalue)
+                    ws['C'+str(maxRow+1)]=str(time_now)
                     wb.save(value+'.xlsx')
+                if maxrow==1 and workbook_sheet['A1'].value==None:
+                    workbook_sheet['A1']='Rank'
+                    workbook_sheet['B1']='Name'
+                    workbook_sheet['C1']='Time'
                 #新增資料到record.xlsx的value worksheet中
-                workbook_sheet['A'+str(maxrow+1)]=str(envalue)
-                print(maxrow,envalue)
-                workbook_sheet['B'+str(maxrow+1)]=str(time_now)
+                if maxrow==1 and workbook_sheet['A1'].value=='Rank':
+                    workbook_sheet['A'+str(maxrow+1)]='1'
+                else:
+                    workbook_sheet['A'+str(maxrow+1)]=str(int(workbook_sheet['A'+str(maxrow)].value)+1)
+                workbook_sheet['B'+str(maxrow+1)]=str(envalue)
+                workbook_sheet['C'+str(maxrow+1)]=str(time_now)
                 window_add_data.destroy()
                 seedata()
                 workbook.save(var)
